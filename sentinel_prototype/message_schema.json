@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sentinel Synthetic Satellite Message",
+  "type": "object",
+  "required": [
+    "message_id",
+    "satellite_id",
+    "timestamp",
+    "sequence_number",
+    "message_type",
+    "sender_role",
+    "payload"
+  ],
+  "properties": {
+    "message_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "satellite_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "sequence_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "message_type": {
+      "enum": [
+        "TELEMETRY",
+        "COMMAND"
+      ]
+    },
+    "sender_role": {
+      "enum": [
+        "satellite",
+        "ground_operator",
+        "mission_analyst",
+        "viewer"
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "description": "Payload fields are constrained by message_type and command policy in validator.py."
+    },
+    "auth_tag": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "Optional HMAC-SHA256 tag over the seven signed fields (see auth.py). Required when authentication is required."
+    }
+  },
+  "additionalProperties": false
+}

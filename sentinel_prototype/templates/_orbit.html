@@ -1,0 +1,75 @@
+{# Simulated satellite link (CSS/SVG only, no scripts, no external assets).
+   EVERYTHING drawn here comes from `link_results`, the server-side validation records.
+   A green/"passed" visual appears only for results whose decision is ACCEPTED; with no results
+   the scene is idle and shows no success. Not connected to any real satellite. #}
+{% set items = (link_results or [])[:8] %}
+{% set n = items|length %}
+{% set acc = items|selectattr('decision','equalto','ACCEPTED')|list|length %}
+{% set rej = n - acc %}
+{% set state = 'idle' if n == 0 else ('accepted' if rej == 0 else ('rejected' if acc == 0 else 'mixed')) %}
+<svg class="orbit-art sx sx-state-{{ state }}{% if compact %} sx-compact{% endif %}" viewBox="{{ '0 30 500 315' if compact else '0 0 500 390' }}" data-link-state="{{ state }}" data-accepted="{{ acc }}" data-rejected="{{ rej }}" role="img" aria-labelledby="sx-title">
+  <title id="sx-title">Simulated satellite link animation. {% if n == 0 %}No message has been validated yet.{% elif state == 'accepted' %}{{ acc }} message(s) were accepted and passed the gate.{% elif state == 'rejected' %}{{ rej }} message(s) were rejected and blocked at the gate; nothing was delivered.{% else %}{{ acc }} accepted and {{ rej }} rejected in the last run.{% endif %} Synthetic data only.</title>
+  <defs>
+    <radialGradient id="sx-ocean" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#3b8de0"/><stop offset=".55" stop-color="#1650a8"/><stop offset="1" stop-color="#0a2159"/></radialGradient>
+    <linearGradient id="sx-shade" x1="0" y1="0" x2="1" y2="1"><stop offset=".35" stop-color="#030a1f" stop-opacity="0"/><stop offset="1" stop-color="#030a1f" stop-opacity=".62"/></linearGradient>
+    <clipPath id="sx-clip"><circle cx="170" cy="235" r="88"/></clipPath>
+    <g id="sx-land" fill="#3fbf7f" stroke="#8ff0bd" stroke-opacity=".45" stroke-width=".8">
+      <path d="M100 205Q112 185 135 190Q150 178 165 192Q172 210 158 222Q140 230 125 224Q104 222 100 205Z"/>
+      <path d="M140 255Q158 245 172 262Q176 285 160 300Q146 292 142 275Z"/>
+      <path d="M195 200Q215 188 236 200Q248 214 238 232Q220 240 205 230Q192 218 195 200Z"/>
+      <path d="M205 262Q218 256 226 266Q220 278 208 274Z"/>
+      <path d="M95 270Q108 262 116 276Q108 290 96 284Z"/>
+      <path d="M120 160Q140 152 160 160Q150 172 128 170Z"/>
+    </g>
+    <g id="sx-sat">
+      <rect x="-27" y="-5" width="19" height="10" fill="#12356b" stroke="#ff9c3e" stroke-width="1.2"/>
+      <rect x="8" y="-5" width="19" height="10" fill="#12356b" stroke="#ff9c3e" stroke-width="1.2"/>
+      <path d="M-24 0H-11M11 0H24" stroke="#ffb463" stroke-opacity=".8"/>
+      <rect x="-7" y="-7" width="14" height="14" rx="2.5" fill="#e8eefb" stroke="#fff"/>
+      <path d="M0 7v7m-4 0h8" stroke="#e8eefb" stroke-width="1.6"/>
+      <circle r="2.6" fill="#ff8b30"/>
+    </g>
+  </defs>
+
+  <g fill="#cfe0ff"><circle cx="40" cy="96" r="1.2"/><circle cx="96" cy="42" r="1.5"/><circle cx="330" cy="40" r="1.2"/><circle cx="470" cy="150" r="1.4"/><circle cx="452" cy="300" r="1.2"/><circle cx="360" cy="350" r="1.5"/><circle cx="60" cy="350" r="1.2"/><circle class="sx-tw" cx="250" cy="70" r="1.6"/><circle class="sx-tw sx-tw2" cx="480" cy="60" r="1.4"/><circle class="sx-tw" cx="30" cy="190" r="1.4"/></g>
+
+  <circle class="sx-ring" cx="170" cy="235" r="122"/>
+  <circle class="sx-ring sx-ring-dash" cx="170" cy="235" r="150"/>
+
+  <circle cx="170" cy="235" r="88" fill="url(#sx-ocean)"/>
+  <g clip-path="url(#sx-clip)"><g class="sx-land-scroll"><use href="#sx-land"/><use href="#sx-land" x="176"/></g></g>
+  <circle cx="170" cy="235" r="88" fill="url(#sx-shade)"/>
+  <circle cx="170" cy="235" r="92" fill="none" stroke="#8fd0ff" stroke-opacity=".28" stroke-width="7"/>
+  <circle cx="170" cy="235" r="88.5" fill="none" stroke="#ffffff" stroke-opacity=".55" stroke-width="1"/>
+
+  <g class="sx-spin sx-spin-a"><g transform="translate(292 235)"><use href="#sx-sat" transform="scale(.62)"/></g></g>
+  <g class="sx-spin sx-spin-b"><g transform="translate(20 235)"><use href="#sx-sat" transform="scale(.5)"/></g></g>
+
+  <path class="sx-link sx-link-in" d="M242 184L330 140"/>
+  <path class="sx-link sx-link-out" d="M330 140L425 82"/>
+  <circle cx="242" cy="184" r="4.5" fill="#ff8b30" stroke="#fff" stroke-width="1"/>
+  <text class="sx-lbl" x="196" y="208">GROUND</text>
+
+  <g transform="translate(330 140)">
+    <circle class="sx-gate-ring" r="26"/>
+    <path class="sx-gate" d="M0-26L22-13V13L0 26L-22 13V-13Z"/>
+    {% if state == 'accepted' %}<path class="sx-glyph" d="M-9 1L-3 8L10-8"/>
+    {% elif state == 'rejected' %}<path class="sx-glyph" d="M-8-8L8 8M8-8L-8 8"/>
+    {% elif state == 'mixed' %}<path class="sx-glyph" d="M0-10V3"/><circle class="sx-glyph-dot" cy="10" r="1.8"/>
+    {% else %}<circle class="sx-glyph-dot" r="2.4"/>{% endif %}
+  </g>
+  <text class="sx-lbl" x="330" y="182" text-anchor="middle">SENTINEL GATE</text>
+  <text class="sx-stat sx-gate-stat" x="330" y="195" text-anchor="middle">{% if state == 'idle' %}WAITING{% elif state == 'accepted' %}PASSED{% elif state == 'rejected' %}BLOCKED{% else %}MIXED RESULTS{% endif %}</text>
+
+  <g class="sx-rx {{ 'sx-rx-live' if acc > 0 else 'sx-rx-dark' }}" transform="translate(425 82)">
+    <circle class="sx-rx-halo" r="27"/>
+    <use href="#sx-sat" transform="scale(1.15)"/>
+  </g>
+  <text class="sx-lbl" x="425" y="126" text-anchor="middle">SATELLITE (SIMULATED)</text>
+  <text class="sx-stat sx-rx-stat" x="425" y="139" text-anchor="middle">{% if acc > 0 %}RECEIVED {{ acc }}{% else %}NOTHING RECEIVED{% endif %}</text>
+
+  {% for row in items %}<rect class="sx-pkt {{ 'sx-pkt-ok' if row.decision == 'ACCEPTED' else 'sx-pkt-no' }}" x="-6" y="-3.5" width="12" height="7" rx="1.6" style="--i:{{ loop.index0 }};--n:{{ n }}"/>{% endfor %}
+
+  <text class="sx-cap1" x="22" y="{{ '58' if compact else '56' }}">{% if n == 0 %}AWAITING MESSAGE{% elif n == 1 %}{{ items[0].message_id|truncate(26, True, '…') }} · {{ items[0].decision }}{% else %}LAST RUN: {{ acc }} ACCEPTED · {{ rej }} REJECTED{% endif %}</text>
+  <text class="sx-cap2" x="22" y="{{ '72' if compact else '70' }}">{% if n == 0 %}Nothing has been sent through the gate yet{% elif n == 1 and acc == 1 %}Passed all configured checks{% elif n == 1 %}Blocked at the gate · not delivered{% else %}Each packet is one real validation result{% endif %}</text>
+</svg>

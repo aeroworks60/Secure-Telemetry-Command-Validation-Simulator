@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Rules & Schema{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> 03 / POLICY INSPECTOR</div><h1>Rules & <em>schema</em></h1><p>A message contract makes validation repeatable: required structure first, then freshness, payload limits and command permissions.</p></div>
+  <div class="heading-badge"><span class="live-dot"></span> CONFIGURED RULES <small>SIMULATION POLICY</small></div>
+</section>
+<section class="panel schema-panel">
+  <div class="panel-heading"><div><div class="section-index">01 / MESSAGE CONTRACT</div><h2>Required message fields</h2></div><span class="panel-corner">JSON OBJECT</span></div>
+  <div class="table-wrap"><table><thead><tr><th>FIELD</th><th>EXPECTED VALUE</th><th>WHY IT EXISTS</th></tr></thead><tbody>
+  <tr><td><code>message_id</code></td><td>Non-empty unique string</td><td>Identifies a message; reused IDs in this process are rejected.</td></tr>
+  <tr><td><code>satellite_id</code></td><td>Non-empty string</td><td>Associates the message with a synthetic satellite.</td></tr>
+  <tr><td><code>timestamp</code></td><td>ISO-8601 datetime with timezone</td><td>Supports freshness checks; it does not prove sender identity.</td></tr>
+  <tr><td><code>sequence_number</code></td><td>Positive integer</td><td>Must increase for accepted messages from the same satellite.</td></tr>
+  <tr><td><code>message_type</code></td><td><code>TELEMETRY</code> or <code>COMMAND</code></td><td>Selects the allowed payload and validation rules.</td></tr>
+  <tr><td><code>sender_role</code></td><td>Configured role string</td><td>Used by the command allowlist to apply simple authorization.</td></tr>
+  <tr><td><code>payload</code></td><td>JSON object with approved fields</td><td>Contains telemetry values or a permitted command.</td></tr>
+  </tbody></table></div>
+</section>
+<div class="rules-grid">
+  <section class="panel rule-card"><div class="rule-card-top"><span class="rule-symbol">↗</span><div><div class="section-index">02 / TELEMETRY</div><h2>Range policy</h2></div></div><p class="panel-description">Numeric telemetry must be within the demo's configured limits. These are illustrative thresholds, not certified aerospace specifications.</p>
+    {% for name, bounds in telemetry_ranges.items() %}<div class="range-row"><code>{{ name }}</code><strong>{{ bounds[0] }}{% if name == 'battery_pct' %}–{{ bounds[1] }}%{% elif name == 'temperature_c' %}–{{ bounds[1] }} °C{% else %}–{{ bounds[1] }} km{% endif %}</strong><div class="range-track"><span style="width:76%"></span></div></div>{% endfor %}
+  </section>
+  <section class="panel rule-card"><div class="rule-card-top"><span class="rule-symbol">⌘</span><div><div class="section-index">03 / COMMANDS</div><h2>Role allowlist</h2></div></div><p class="panel-description">A command must be recognized and the sender role must be permitted for that command.</p>
+    <div class="command-table"><div class="command-head"><span>COMMAND</span><span>PERMITTED ROLE(S)</span></div>
+    {% for command, permitted in command_roles.items() %}<div class="command-row"><code>{{ command }}</code><span>{% for role in permitted %}<i class="role-chip">{{ role }}</i>{% endfor %}</span></div>{% endfor %}</div>
+  </section>
+  <section class="panel rule-card"><div class="rule-card-top"><span class="rule-symbol">◷</span><div><div class="section-index">04 / FRESHNESS & REPLAY</div><h2>Time and order</h2></div></div><div class="rule-fact"><span class="fact-dot orange-dot"></span><div><strong>Timestamp window</strong><p>Maximum age: 120 seconds. Future timestamps more than 30 seconds ahead are rejected.</p></div></div><div class="rule-fact"><span class="fact-dot orange-dot"></span><div><strong>Sequence progression</strong><p>For each satellite ID, a successfully accepted sequence must be greater than the last accepted one.</p></div></div><div class="rule-fact"><span class="fact-dot orange-dot"></span><div><strong>Duplicate identifiers</strong><p>Message IDs seen earlier in the running process are rejected if reused, including IDs from previously rejected messages.</p></div></div>
+  </section>
+  <section class="panel rule-card"><div class="rule-card-top"><span class="rule-symbol">!</span><div><div class="section-index">05 / SCOPE BOUNDARY</div><h2>What this does not prove</h2></div></div><ul class="scope-list"><li>A valid timestamp does not authenticate a sender.</li><li>A duplicate-ID check is not complete replay protection by itself.</li><li>Role checks are demo policy, not real identity management.</li><li>HMAC proves a message was not changed since signing by a holder of the shared key. It does not encrypt the message, hide its contents, or make this prototype production-secure.</li><li>The demo signing key is a development-only value unless SENTINEL_HMAC_KEY is set on the server.</li><li>This app does not communicate with a satellite.</li></ul></section>
+</div>
+<div class="scope-strip"><span class="scope-icon">i</span><div><strong>Why a schema matters</strong><p>It makes expected fields explicit so that malformed or unexpected inputs can be rejected consistently instead of guessed at.</p></div><a href="{{ url_for('validate_message') }}">Test these rules ↗</a></div>
+{% endblock %}

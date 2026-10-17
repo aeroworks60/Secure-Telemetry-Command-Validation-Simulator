@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Message Lab{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> 02 / INTERACTIVE TEST BAY</div><h1>Message <em>Lab</em></h1><p>Submit one synthetic message, see the exact validation outcome, and inspect the rule that produced it.</p></div>
+  <div class="heading-badge"><span class="live-dot"></span> ENGINE READY <small>LOCAL PROCESS</small></div>
+</section>
+
+<div class="lab-layout">
+  <section class="panel editor-panel">
+    <div class="panel-heading"><div><div class="section-index">INPUT / 001</div><h2>Incoming message</h2></div><span class="file-label"><span class="file-dot"></span> message.json</span></div>
+    <label class="field-label" for="example">LOAD A SEEDED EXAMPLE</label>
+    <select id="example" name="example" form="message-form" class="select-control">
+      <option value="Custom JSON" {% if selected == 'Custom JSON' %}selected{% endif %}>Custom JSON / edit manually</option>
+      {% for label in examples.keys() %}<option value="{{ label }}" {% if selected == label %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+    <form id="message-form" action="{{ url_for('validate_message') }}" method="post">
+      <section class="customizer-box" aria-labelledby="customizer-title">
+        <div class="customizer-head">
+          <div>
+            <div class="section-index">EDIT / 001A</div>
+            <h3 id="customizer-title">Customize this message</h3>
+            <p>Change the fields below, then click <strong>Apply fields to JSON</strong>. Or edit the JSON directly underneath.</p>
+          </div>
+          <span class="file-label">VISUAL BUILDER</span>
+        </div>
+        <div class="customizer-actions">
+          <button id="load-to-builder" class="button button-quiet button-small" type="button">Load current JSON into fields</button>
+          <button id="apply-builder" class="button button-primary button-small" type="button">Apply fields to JSON ↓</button>
+        </div>
+        <div class="builder-grid">
+          <label class="builder-field"><span>MESSAGE ID</span><input id="b-message-id" type="text" value="" autocomplete="off" placeholder="e.g. USER-001"></label>
+          <label class="builder-field"><span>SATELLITE ID</span><input id="b-satellite-id" type="text" value="" autocomplete="off" placeholder="e.g. SAT-ALPHA"></label>
+          <label class="builder-field builder-field-wide"><span>TIMESTAMP (ISO-8601 WITH TIMEZONE)</span><input id="b-timestamp" type="text" value="" autocomplete="off" placeholder="2026-10-17T12:00:00Z"></label>
+          <label class="builder-field"><span>SEQUENCE NUMBER</span><input id="b-sequence" type="number" min="1" step="1" value="100"></label>
+          <label class="builder-field"><span>MESSAGE TYPE</span><select id="b-message-type"><option value="TELEMETRY">TELEMETRY</option><option value="COMMAND">COMMAND</option></select></label>
+          <label class="builder-field builder-field-wide"><span>SENDER ROLE</span><select id="b-sender-role"><option value="satellite">satellite</option><option value="ground_operator">ground_operator</option><option value="mission_analyst">mission_analyst</option><option value="viewer">viewer</option></select></label>
+        </div>
+        <div id="b-telemetry-fields" class="payload-builder">
+          <div class="payload-builder-title">TELEMETRY PAYLOAD <small>Numeric values; configured limits are shown on the Rules page.</small></div>
+          <div class="builder-grid builder-grid-three">
+            <label class="builder-field"><span>BATTERY %</span><input id="b-battery" type="number" step="any" value="86.4"></label>
+            <label class="builder-field"><span>TEMPERATURE °C</span><input id="b-temperature" type="number" step="any" value="22.5"></label>
+            <label class="builder-field"><span>ALTITUDE KM</span><input id="b-altitude" type="number" step="any" value="547.2"></label>
+          </div>
+        </div>
+        <div id="b-command-fields" class="payload-builder" hidden>
+          <div class="payload-builder-title">COMMAND PAYLOAD <small>Choose an allowlisted command, then complete its fields.</small></div>
+          <div class="builder-grid">
+            <label class="builder-field builder-field-wide"><span>COMMAND TYPE</span><select id="b-command"><option value="REQUEST_STATUS">REQUEST_STATUS</option><option value="SET_ORIENTATION">SET_ORIENTATION</option><option value="CAPTURE_IMAGE">CAPTURE_IMAGE</option><option value="REBOOT_SENSOR">REBOOT_SENSOR</option></select></label>
+            <label id="b-angle-wrap" class="builder-field"><span>ANGLE (−180 TO 180°)</span><input id="b-angle" type="number" min="-180" max="180" step="any" value="45"></label>
+            <label id="b-target-wrap" class="builder-field"><span>CAPTURE TARGET</span><input id="b-target" type="text" value="cloud-pattern-07" autocomplete="off"></label>
+          </div>
+        </div>
+        <div class="customizer-footer"><span class="small-orange-dot"></span><span id="builder-status" role="status" aria-live="polite">Load a sample into the builder, make edits, and apply them to the JSON editor below.</span></div>
+      </section>
+      <section class="auth-box" aria-labelledby="auth-title">
+        <div class="auth-head">
+          <div>
+            <div class="section-index">AUTH / 001B</div>
+            <h3 id="auth-title">Message authentication · HMAC-SHA256</h3>
+            <p>Signing happens on the server, so the secret key is never sent to your browser. HMAC shows the signed fields were not changed after signing by a holder of the shared key. It does <strong>not</strong> encrypt the message.</p>
+          </div>
+          <span id="auth-mode-chip" class="auth-mode {% if auth.required %}auth-mode-on{% endif %}">AUTH {{ 'REQUIRED' if auth.required else 'OPTIONAL' }}</span>
+        </div>
+        <div class="customizer-actions">
+          <button id="sign-message" class="button button-primary button-small" type="button" data-sign-url="{{ url_for('auth_sign') }}">Sign with server key</button>
+          <button id="tamper-message" class="button button-quiet button-small" type="button">Simulate tampering</button>
+          <button id="toggle-auth-mode" class="button button-quiet button-small" type="button" data-mode-url="{{ url_for('auth_mode') }}" data-required="{{ 'true' if auth.required else 'false' }}">{{ 'Make authentication optional' if auth.required else 'Require authentication' }}</button>
+        </div>
+        <div class="customizer-footer"><span class="small-orange-dot"></span><span id="auth-status" role="status" aria-live="polite">Key source: {{ auth.key_label }}. Sign the message, validate it, then use “Simulate tampering” and validate again.</span></div>
+      </section>
+      <label class="field-label editor-label" for="raw_json"><span>RAW JSON EDITOR — FULL CONTROL</span><span class="editor-hint">Max 64 KiB · strict JSON</span></label>
+      <p class="raw-json-help">You can click inside this box and change any value, add/remove fields, or intentionally create an invalid message for testing. After editing the visual fields, press <strong>Apply fields to JSON</strong> first.</p>
+      <div class="code-editor-wrap"><div class="editor-gutter" aria-hidden="true"><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span><span>16</span></div><textarea id="raw_json" name="raw_json" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="JSON message input">{{ raw_json }}</textarea></div>
+      <div class="editor-foot"><span><i class="small-orange-dot"></i> This message is processed locally</span><span id="json-byte-count">{{ raw_json|length }} characters</span></div>
+      <button class="button button-primary button-wide" type="submit"><span class="play-mark">▶</span> Validate message <span class="button-arrow">↗</span></button>
+    </form>
+    {% if parse_error %}<div class="result-box result-error"><div class="result-title"><span class="result-icon">!</span><div><strong>INPUT NOT PROCESSED</strong><small>JSON parser / pre-validation safeguard</small></div></div><p>{{ parse_error }}</p></div>{% endif %}
+  </section>
+
+  <section class="panel output-panel">
+    <div class="panel-heading"><div><div class="section-index">OUTPUT / 002</div><h2>Decision analysis</h2></div><span class="panel-corner">RULE ENGINE</span></div>
+    <div class="orbit-lab">{% set link_results = ([result] if result else []) %}{% set compact = true %}{% include '_orbit.html' %}</div>
+    {% if result %}
+      <div class="result-banner {% if result.decision == 'ACCEPTED' %}result-accepted{% else %}result-rejected{% endif %}">
+        <div class="result-big-icon">{% if result.decision == 'ACCEPTED' %}✓{% else %}×{% endif %}</div>
+        <div class="result-headline"><span class="section-index">FINAL DECISION</span><h3>{{ result.decision }}</h3><p>{% if result.decision == 'ACCEPTED' %}All configured validation checks passed for this message.{% else %}At least one configured validation check failed.{% endif %}</p></div>
+        <div class="result-stamp">{{ '%03d'|format(result.event_number) }}<small>EVENT</small></div>
+      </div>
+      <div class="result-identifiers"><div><span>MESSAGE ID</span><strong>{{ result.message_id }}</strong></div><div><span>MESSAGE TYPE</span><strong>{{ result.message_type }}</strong></div><div><span>SEQUENCE NO.</span><strong>{{ result.sequence_number }}</strong></div></div>
+      <div class="auth-result auth-result-{{ result.authentication|lower }}"><span>AUTHENTICATION</span><strong>{{ result.authentication|replace('_',' ') }}</strong><small>{{ result.authentication_detail }}</small></div>
+      <div class="reason-heading"><h3>Why this decision?</h3><span>{{ result.reasons|length }} REASON{% if result.reasons|length != 1 %}S{% endif %}</span></div>
+      <ul class="reason-list {% if result.decision == 'ACCEPTED' %}reason-list-ok{% endif %}">{% for reason in result.reasons %}<li><span class="reason-bullet">{% if result.decision == 'ACCEPTED' %}✓{% else %}!{% endif %}</span><span>{{ reason }}</span></li>{% endfor %}</ul>
+      <div class="trace-heading"><h3>Validation path</h3><span>CONCEPTUAL FLOW</span></div>
+      <div class="mini-trace"><span class="trace-done">JSON parsed</span><b>›</b><span class="trace-done">Rules evaluated</span><b>›</b><span class="{% if result.decision == 'ACCEPTED' %}trace-pass{% else %}trace-fail{% endif %}">{{ result.decision }}</span></div>
+      <p class="trace-note">This path summarizes the workflow. The specific reasons above are the authoritative explanation for this result.</p>
+    {% else %}
+      <div class="analysis-empty"><div class="target-rings"><span class="target-cross">+</span></div><div class="empty-kicker">AWAITING INPUT</div><h3>Run a message through the gate.</h3><p>Choose a seeded example or edit the JSON. The decision, failed rules and audit entry will appear here.</p><div class="empty-checks"><span>01 <b>Structure</b></span><span>02 <b>Freshness</b></span><span>03 <b>Authorization</b></span></div></div>
+    {% endif %}
+    <div class="output-footer"><span><i class="footer-pip"></i> Every parsed message is evaluated by the same local rule engine.</span><a href="{{ url_for('audit_log') }}">Open audit trail ↗</a></div>
+  </section>
+</div>
+<section class="lab-tip"><span class="tip-mark">i</span><p><strong>Demo tip:</strong> Validate a valid telemetry message, then submit the exact same JSON again. The second attempt should be rejected for a duplicate message ID. Then change the message ID and set <code>battery_pct</code> to <code>140</code> to demonstrate a range violation.</p></section>
+<section class="lab-tip"><span class="tip-mark">i</span><p><strong>Authentication demo:</strong> turn on <em>Require authentication</em>, load <code>HMAC: signed valid telemetry</code> and validate it (accepted). Then load <code>HMAC: tampered after signing</code> (rejected: tag mismatch), or press <em>Simulate tampering</em> on a freshly signed message. An unsigned message is rejected as missing its tag. The authentication result is shown separately from authorization, freshness and replay checks.</p></section>
+<script id="seeded-examples" type="application/json">{{ examples|tojson }}</script>
+{% endblock %}

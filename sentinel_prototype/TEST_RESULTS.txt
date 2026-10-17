@@ -1,0 +1,25 @@
+SENTINEL V5 (navy/orange/white/green theme + data-driven orbit animation) - TEST/VERIFICATION STATUS
+
+Environment: Python 3.12.3, Flask 3.1.3, Linux.
+
+    python -m unittest discover -s tests -v
+    Result: Ran 93 tests in 0.849s -> OK
+
+Breakdown: 83 earlier tests (validator, safe JSON, runtime, web, HMAC) unchanged and passing,
+plus 10 new tests in tests/test_orbit_animation.py (animation reflects real results, no fake success).
+
+HMAC authentication: genuinely implemented (auth.py, hmac + hashlib, hmac.compare_digest) and covered by
+tests/test_auth.py and tests/test_auth_web.py. It is a shared-key integrity/authenticity demo: it does not
+encrypt and is not production-secure.
+
+Also verified here:
+- python app.py starts a Flask server on 127.0.0.1:8765 and the pages respond (Linux).
+- In a real headless Chromium: Overview, Message Lab, signed valid message (accepted), tampered message
+  (rejected / TAG MISMATCH), authentication demo (2 accepted, 5 rejected), and a 390px mobile layout rendered
+  with no JavaScript errors and no horizontal page overflow.
+- static/console.js passes node --check.
+
+NOT verified:
+- Launching on Windows (run_sentinel.bat / the Windows commands in README.md) was not executed by the author.
+- Only Chromium was used for the visual check; Firefox and Safari were not tested.
+- The animation's CSS motion was seen in browser screenshots, not measured for performance.

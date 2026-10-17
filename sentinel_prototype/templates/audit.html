@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Audit Trail{% endblock %}
+{% block content %}
+<section class="page-heading">
+  <div><div class="eyebrow"><span class="eyebrow-line"></span> 04 / EVENT TRACEABILITY</div><h1>Audit <em>trail</em></h1><p>A chronological record of the validation decisions made during this running local process.</p></div>
+  <div class="heading-badge"><span class="live-dot"></span> IN-MEMORY LOG <small>RESETS WITH PROCESS</small></div>
+</section>
+<section class="audit-summary metrics-grid">
+  <article class="metric-card metric-total"><div class="metric-top"><span>RECORDED EVENTS</span><span class="metric-icon">≡</span></div><div class="metric-number">{{ '%02d'|format(summary.total) }}</div><div class="metric-foot">This process only</div></article>
+  <article class="metric-card metric-accepted"><div class="metric-top"><span>ACCEPTED</span><span class="status-symbol">✓</span></div><div class="metric-number">{{ '%02d'|format(summary.accepted) }}</div><div class="metric-foot">All configured checks passed</div></article>
+  <article class="metric-card metric-rejected"><div class="metric-top"><span>REJECTED</span><span class="status-symbol">×</span></div><div class="metric-number">{{ '%02d'|format(summary.rejected) }}</div><div class="metric-foot">At least one check failed</div></article>
+  <article class="metric-card metric-rate"><div class="metric-top"><span>PASS RATE</span><span class="metric-icon">%</span></div><div class="metric-number">{{ summary.acceptance_rate }}<small>%</small></div><div class="metric-foot">Of inspected messages</div></article>
+</section>
+<section class="panel audit-panel">
+  <div class="panel-heading"><div><div class="section-index">EVENT RECORDS / NEWEST FIRST</div><h2>Decision ledger</h2></div><div class="audit-actions"><a class="button button-quiet button-small" href="{{ url_for('export_json') }}">↓ JSON</a><a class="button button-quiet button-small" href="{{ url_for('export_csv') }}">↓ CSV</a></div></div>
+  {% if audit %}<div class="table-wrap"><table><thead><tr><th>EVENT</th><th>TIME (UTC)</th><th>MESSAGE</th><th>TYPE / SEQ</th><th>DECISION</th><th>AUTH</th><th>EXPLANATION</th></tr></thead><tbody>
+  {% for row in audit %}<tr><td><span class="event-id">{{ '%03d'|format(row.event_number) }}</span></td><td class="time-cell">{{ row.evaluated_at }}</td><td><code>{{ row.message_id }}</code><small class="sub-table">{{ row.satellite_id }}</small></td><td>{{ row.message_type }}<small class="sub-table">SEQ {{ row.sequence_number }}</small></td><td><span class="decision-pill {% if row.decision == 'ACCEPTED' %}pill-ok{% else %}pill-no{% endif %}">{{ row.decision }}</span></td><td><span class="auth-pill auth-pill-{{ row.authentication|lower }}">{{ row.authentication|replace('_',' ') }}</span></td><td class="reason-cell">{{ row.reason }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}<div class="empty-state audit-empty"><div class="empty-orbit"><span>≡</span></div><h3>No recorded events</h3><p>Run the eight-message scenario or validate a message. Every processed message will appear here.</p><a class="button button-primary" href="{{ url_for('validate_message') }}">Open Message Lab ↗</a></div>{% endif %}
+</section>
+<div class="audit-disclaimer"><span class="tip-mark">!</span><p><strong>Audit limitation:</strong> entries are stored in process memory and can be cleared or lost when the server restarts. This is enough to demonstrate event logging, but not a tamper-proof production audit architecture.</p><form action="{{ url_for('reset') }}" method="post" onsubmit="return confirm('Clear the current in-memory validation state and audit entries?')"><button class="button button-danger-quiet button-small" type="submit">Reset local state</button></form></div>
+{% endblock %}
